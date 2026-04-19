@@ -64,7 +64,8 @@ def cmd_build_fortran():
     )
 
     # Fix separator lines for gfortran compatibility
-    run_cmd(["sed", "-i", "", "s/^--*/C ---/", str(zbsubs)])
+    run_cmd(["sed", "-i.bak", "s/^--*/C ---/", str(zbsubs)])
+    (zbsubs.parent / (zbsubs.name + ".bak")).unlink()
 
     machcon = FORTRAN / "machcon_ieee.f"
 
@@ -115,13 +116,27 @@ def cmd_grid():
 
 
 def cmd_compute_rust():
-    print("Computing Rust results...", flush=True)
+    print("Computing Rust results (complex-bessel)...", flush=True)
     RESULTS.mkdir(parents=True, exist_ok=True)
     grid = RESULTS / "test_grid.json"
     out = RESULTS / "rust_results.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / "target" / "release" / "compute")],
+            [str(ROOT / ".." / "target" / "release" / "compute"), "complex-bessel"],
+            stdin=fin,
+            stdout=fout,
+            stderr=subprocess.DEVNULL,
+        )
+
+
+def cmd_compute_bessel_rs():
+    print("Computing Rust results (bessel-rs)...", flush=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    grid = RESULTS / "test_grid.json"
+    out = RESULTS / "bessel_rs_results.json"
+    with open(grid) as fin, open(out, "w") as fout:
+        run_cmd(
+            [str(ROOT / ".." / "target" / "release" / "compute"), "bessel-rs"],
             stdin=fin,
             stdout=fout,
             stderr=subprocess.DEVNULL,
@@ -145,6 +160,7 @@ def cmd_compute_mpmath():
 
 def cmd_compute():
     cmd_compute_rust()
+    cmd_compute_bessel_rs()
     cmd_compute_fortran()
     cmd_compute_scipy()
 
@@ -153,16 +169,28 @@ def cmd_compute():
 
 
 def cmd_bench_rust():
-    print("Benchmarking Rust...", flush=True)
+    print("Benchmarking Rust (complex-bessel)...", flush=True)
     RESULTS.mkdir(parents=True, exist_ok=True)
     grid = RESULTS / "test_grid.json"
     out = RESULTS / "rust_bench.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / "target" / "release" / "bench")],
+            [str(ROOT / ".." / "target" / "release" / "bench"), "complex-bessel"],
             stdin=fin,
             stdout=fout,
-            stderr=subprocess.DEVNULL,
+        )
+
+
+def cmd_bench_bessel_rs():
+    print("Benchmarking Rust (bessel-rs)...", flush=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    grid = RESULTS / "test_grid.json"
+    out = RESULTS / "bessel_rs_bench.json"
+    with open(grid) as fin, open(out, "w") as fout:
+        run_cmd(
+            [str(ROOT / ".." / "target" / "release" / "bench"), "bessel-rs"],
+            stdin=fin,
+            stdout=fout,
         )
 
 
@@ -178,6 +206,7 @@ def cmd_bench_scipy():
 
 def cmd_bench():
     cmd_bench_rust()
+    cmd_bench_bessel_rs()
     cmd_bench_fortran()
     cmd_bench_scipy()
 
@@ -250,11 +279,13 @@ COMMANDS = {
     "grid": cmd_grid,
     "compute": cmd_compute,
     "compute-rust": cmd_compute_rust,
+    "compute-bessel-rs": cmd_compute_bessel_rs,
     "compute-fortran": cmd_compute_fortran,
     "compute-scipy": cmd_compute_scipy,
     "compute-mpmath": cmd_compute_mpmath,
     "bench": cmd_bench,
     "bench-rust": cmd_bench_rust,
+    "bench-bessel-rs": cmd_bench_bessel_rs,
     "bench-fortran": cmd_bench_fortran,
     "bench-scipy": cmd_bench_scipy,
     "compare": cmd_compare,

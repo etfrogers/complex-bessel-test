@@ -93,6 +93,7 @@ def main():
 
     print("Loading results...", flush=True)
     rust = load_results(os.path.join(results_dir, "rust_results.json"))
+    bessel_rs = load_results(os.path.join(results_dir, "bessel_rs_results.json"))
     fortran = load_results(os.path.join(results_dir, "fortran_results.json"))
     mpmath_data = load_results(os.path.join(results_dir, "mpmath_results.json"))
     scipy_data = load_results(os.path.join(results_dir, "scipy_results.json"))
@@ -105,7 +106,7 @@ def main():
 
     # ── 1. Accuracy vs mpmath ──
     print("Computing accuracy vs mpmath...", flush=True)
-    accuracy = defaultdict(lambda: {"rust": [], "fortran": [], "scipy": []})
+    accuracy = defaultdict(lambda: {"rust": [], "bessel_rs": [], "fortran": [], "scipy": []})
 
     # Rust vs mpmath
     for r in rust:
@@ -120,6 +121,20 @@ def main():
         err = relative_error(r["re"], r["im"], ref_re, ref_im)
         if err is not None:
             accuracy[r["function"]]["rust"].append(err)
+
+    # bessel-rs vs mpmath
+    for r in bessel_rs:
+        key = (r["grid"], r["function"], r["nu"], r["z_re"], r["z_im"])
+        if r["status"] not in ("ok", "reduced_precision") or r["re"] is None:
+            continue
+        mp = mpmath_idx.get(key)
+        if not mp or mp["status"] != "ok" or mp["re"] is None:
+            continue
+        ref_re = float(mp["re"])
+        ref_im = float(mp["im"])
+        err = relative_error(r["re"], r["im"], ref_re, ref_im)
+        if err is not None:
+            accuracy[r["function"]]["bessel_rs"].append(err)
 
     # Fortran vs mpmath (nu >= 0 only)
     for r in fortran:
@@ -285,7 +300,7 @@ def main():
     for func in sorted(accuracy_summary.keys()):
         data = accuracy_summary[func]
         parts = []
-        for impl_name in ["rust", "fortran", "scipy"]:
+        for impl_name in ["rust", "bessel_rs", "fortran", "scipy"]:
             d = data.get(impl_name, {})
             if d.get("max_err") is not None:
                 parts.append(

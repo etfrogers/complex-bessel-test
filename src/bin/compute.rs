@@ -1,7 +1,15 @@
-use complex_bessel::*;
+use bessel_rs::{
+    HankelKind, airy, airy_b, airy_bp, airyp, bessel_i, bessel_j, bessel_k, bessel_y, hankel,
+};
+use complex_bessel::{
+    Scaling, airy_raw, airyprime_raw, besseli, besseli_scaled, besselj, besselj_scaled, besselk,
+    besselk_scaled, bessely, bessely_scaled, biry_raw, biryprime_raw, hankel1, hankel1_scaled,
+    hankel2, hankel2_scaled,
+};
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
 use std::io::{self, Read};
 
 #[derive(Deserialize)]
@@ -32,6 +40,36 @@ struct ResultRecord {
     precision: Option<String>,
 }
 
+fn compute_function_bessel_rs(
+    fname: &str,
+    nu: f64,
+    z: Complex<f64>,
+) -> (Option<f64>, Option<f64>, String, Option<String>) {
+    let result = match fname {
+        "airy" => airy(z),
+        "airyprime" => airyp(z),
+        "biry" => airy_b(z),
+        "biryprime" => airy_bp(z),
+        "besselj" => bessel_j(nu, z),
+        "bessely" => bessel_y(nu, z),
+        "besseli" => bessel_i(nu, z),
+        "besselk" => bessel_k(nu, z),
+        "hankel1" => hankel(nu, z, HankelKind::First),
+        "hankel2" => hankel(nu, z, HankelKind::Second),
+        _ => return (None, None, "unknown_function".into(), None),
+    };
+
+    match result {
+        Ok(val) => (
+            Some(val.re),
+            Some(val.im),
+            "ok".into(),
+            Some("normal".into()),
+        ),
+        Err(_) => (None, None, "error".into(), None),
+    }
+}
+
 fn compute_function(
     fname: &str,
     nu: f64,
@@ -52,8 +90,8 @@ fn compute_function(
         return match raw_result {
             Ok(ar) => {
                 let (status, precision) = match ar.status {
-                    Accuracy::Normal => ("ok", "normal"),
-                    Accuracy::Reduced => ("reduced_precision", "reduced"),
+                    complex_bessel::Accuracy::Normal => ("ok", "normal"),
+                    complex_bessel::Accuracy::Reduced => ("reduced_precision", "reduced"),
                 };
                 (
                     Some(ar.value.re),
@@ -62,10 +100,14 @@ fn compute_function(
                     Some(precision.into()),
                 )
             }
-            Err(Error::InvalidInput) => (None, None, "invalid_input".into(), None),
-            Err(Error::Overflow) => (None, None, "overflow".into(), None),
-            Err(Error::TotalPrecisionLoss) => (None, None, "total_precision_loss".into(), None),
-            Err(Error::ConvergenceFailure) => (None, None, "convergence_failure".into(), None),
+            Err(complex_bessel::Error::InvalidInput) => (None, None, "invalid_input".into(), None),
+            Err(complex_bessel::Error::Overflow) => (None, None, "overflow".into(), None),
+            Err(complex_bessel::Error::TotalPrecisionLoss) => {
+                (None, None, "total_precision_loss".into(), None)
+            }
+            Err(complex_bessel::Error::ConvergenceFailure) => {
+                (None, None, "convergence_failure".into(), None)
+            }
         };
     }
 
@@ -93,10 +135,14 @@ fn compute_function(
             "ok".into(),
             Some("normal".into()),
         ),
-        Err(Error::InvalidInput) => (None, None, "invalid_input".into(), None),
-        Err(Error::Overflow) => (None, None, "overflow".into(), None),
-        Err(Error::TotalPrecisionLoss) => (None, None, "total_precision_loss".into(), None),
-        Err(Error::ConvergenceFailure) => (None, None, "convergence_failure".into(), None),
+        Err(complex_bessel::Error::InvalidInput) => (None, None, "invalid_input".into(), None),
+        Err(complex_bessel::Error::Overflow) => (None, None, "overflow".into(), None),
+        Err(complex_bessel::Error::TotalPrecisionLoss) => {
+            (None, None, "total_precision_loss".into(), None)
+        }
+        Err(complex_bessel::Error::ConvergenceFailure) => {
+            (None, None, "convergence_failure".into(), None)
+        }
     }
 }
 
@@ -114,7 +160,7 @@ fn is_airy(fname: &str) -> bool {
     )
 }
 
-fn process_grid(grid_name: &str, spec: &GridSpec) -> Vec<ResultRecord> {
+fn process_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<ResultRecord> {
     let mut records = Vec::new();
 
     // Pre-compute Airy results: cache by (z_re, z_im, function) -> result
@@ -132,7 +178,11 @@ fn process_grid(grid_name: &str, spec: &GridSpec) -> Vec<ResultRecord> {
                     let key = (re.to_bits(), im.to_bits(), func.clone());
                     airy_cache.entry(key).or_insert_with(|| {
                         let z = Complex::new(re, im);
-                        compute_function(func, 0.0, z)
+                        match implementation {
+                            "complex-bessel" => compute_function(func, 0.0, z),
+                            "bessel-rs" => compute_function_bessel_rs(func, 0.0, z),
+                            _ => panic!("Unknown implementation"),
+                        }
                     });
                 }
             }
@@ -152,7 +202,11 @@ fn process_grid(grid_name: &str, spec: &GridSpec) -> Vec<ResultRecord> {
                         let key = (re.to_bits(), im.to_bits(), func.clone());
                         airy_cache.get(&key).unwrap().clone()
                     } else {
-                        compute_function(func, nu, z)
+                        match implementation {
+                            "complex-bessel" => compute_function(func, nu, z),
+                            "bessel-rs" => compute_function_bessel_rs(func, nu, z),
+                            _ => panic!("Unknown implementation"),
+                        }
                     };
 
                     records.push(ResultRecord {
@@ -176,6 +230,13 @@ fn process_grid(grid_name: &str, spec: &GridSpec) -> Vec<ResultRecord> {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() != 2 {
+        eprintln!("Usage: {} <implementation>", args[0]);
+        return;
+    }
+    let implementation = &args[1];
+
     let mut input = String::new();
     io::stdin()
         .read_to_string(&mut input)
@@ -185,8 +246,12 @@ fn main() {
 
     let mut all_records = Vec::new();
 
-    all_records.extend(process_grid("unscaled", &grid.unscaled_grid));
-    all_records.extend(process_grid("scaled", &grid.scaled_grid));
+    all_records.extend(process_grid(
+        "unscaled",
+        &grid.unscaled_grid,
+        implementation,
+    ));
+    all_records.extend(process_grid("scaled", &grid.scaled_grid, implementation));
 
     let json = serde_json::to_string(&all_records).expect("Failed to serialize results");
     println!("{}", json);
