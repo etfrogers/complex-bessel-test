@@ -1,5 +1,7 @@
 use bessel_rs::{
-    HankelKind, airy, airy_b, airy_bp, airyp, bessel_i, bessel_j, bessel_k, bessel_y, hankel,
+    HankelKind, Scaling as BesselRsScaling, airy, airy_b, airy_bp, airyp, bessel_i, bessel_j,
+    bessel_k, bessel_y, complex_airy, complex_airy_b, complex_bessel_i, complex_bessel_j,
+    complex_bessel_k, complex_bessel_y, complex_hankel1, complex_hankel2, hankel,
 };
 use complex_bessel::{
     Scaling, airy_raw, airyprime_raw, besseli, besseli_scaled, besselj, besselj_scaled, besselk,
@@ -56,6 +58,16 @@ fn compute_function_bessel_rs(
         "besselk" => bessel_k(nu, z),
         "hankel1" => hankel(nu, z, HankelKind::First),
         "hankel2" => hankel(nu, z, HankelKind::Second),
+        "airy_scaled" => complex_airy(z, false, BesselRsScaling::Scaled).map(|v| v.0),
+        "airyprime_scaled" => complex_airy(z, true, BesselRsScaling::Scaled).map(|v| v.0),
+        "biry_scaled" => complex_airy_b(z, false, BesselRsScaling::Scaled),
+        "biryprime_scaled" => complex_airy_b(z, true, BesselRsScaling::Scaled),
+        "besselj_scaled" => complex_bessel_j(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        "bessely_scaled" => complex_bessel_y(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        "besseli_scaled" => complex_bessel_i(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        "besselk_scaled" => complex_bessel_k(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        "hankel1_scaled" => complex_hankel1(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        "hankel2_scaled" => complex_hankel2(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
         _ => return (None, None, "unknown_function".into(), None),
     };
 

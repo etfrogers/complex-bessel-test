@@ -1,10 +1,12 @@
 use bessel_rs::{
-    HankelKind, airy, airy_b, airy_bp, airyp, bessel_i, bessel_j, bessel_k, bessel_y, hankel,
+    HankelKind, Scaling as BesselRsScaling, airy as airy_bessel_rs, airy_b, airy_bp, airyp,
+    bessel_i, bessel_j, bessel_k, bessel_y, complex_airy, complex_airy_b, complex_bessel_i,
+    complex_bessel_j, complex_bessel_k, complex_bessel_y, complex_hankel1, complex_hankel2, hankel,
 };
 use complex_bessel::{
-    airy as airy_cb, airyprime, besseli, besseli_scaled, besselj, besselj_scaled, besselk,
-    besselk_scaled, bessely, bessely_scaled, biry, biryprime, hankel1, hankel1_scaled, hankel2,
-    hankel2_scaled,
+    airy, airy_scaled, airyprime, airyprime_scaled, besseli, besseli_scaled, besselj,
+    besselj_scaled, besselk, besselk_scaled, bessely, bessely_scaled, biry, biry_scaled, biryprime,
+    biryprime_scaled, hankel1, hankel1_scaled, hankel2, hankel2_scaled,
 };
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
@@ -38,16 +40,44 @@ struct BenchRecord {
 
 fn call_function_bessel_rs(fname: &str, nu: f64, z: Complex<f64>) {
     let _ = match fname {
+        "airy" => std::hint::black_box(airy_bessel_rs(z)),
+        "airyprime" => std::hint::black_box(airyp(z)),
+        "biry" => std::hint::black_box(airy_b(z)),
+        "biryprime" => std::hint::black_box(airy_bp(z)),
         "besselj" => std::hint::black_box(bessel_j(nu, z)),
         "bessely" => std::hint::black_box(bessel_y(nu, z)),
         "besseli" => std::hint::black_box(bessel_i(nu, z)),
         "besselk" => std::hint::black_box(bessel_k(nu, z)),
         "hankel1" => std::hint::black_box(hankel(nu, z, HankelKind::First)),
         "hankel2" => std::hint::black_box(hankel(nu, z, HankelKind::Second)),
-        "airy" => std::hint::black_box(airy(z)),
-        "airyprime" => std::hint::black_box(airyp(z)),
-        "biry" => std::hint::black_box(airy_b(z)),
-        "biryprime" => std::hint::black_box(airy_bp(z)),
+        "besselj_scaled" => std::hint::black_box(
+            complex_bessel_j(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        ),
+        "bessely_scaled" => std::hint::black_box(
+            complex_bessel_y(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        ),
+        "besseli_scaled" => std::hint::black_box(
+            complex_bessel_i(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        ),
+        "besselk_scaled" => std::hint::black_box(
+            complex_bessel_k(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]),
+        ),
+        "hankel1_scaled" => {
+            std::hint::black_box(complex_hankel1(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]))
+        }
+        "hankel2_scaled" => {
+            std::hint::black_box(complex_hankel2(z, nu, BesselRsScaling::Scaled, 1).map(|v| v.0[0]))
+        }
+        "airy_scaled" => {
+            std::hint::black_box(complex_airy(z, false, BesselRsScaling::Scaled).map(|v| v.0))
+        }
+        "airyprime_scaled" => {
+            std::hint::black_box(complex_airy(z, true, BesselRsScaling::Scaled).map(|v| v.0))
+        }
+        "biry_scaled" => std::hint::black_box(complex_airy_b(z, false, BesselRsScaling::Scaled)),
+        "biryprime_scaled" => {
+            std::hint::black_box(complex_airy_b(z, true, BesselRsScaling::Scaled))
+        }
         _ => Ok(Complex::new(0.0, 0.0)),
     };
 }
@@ -72,7 +102,7 @@ fn call_function(fname: &str, nu: f64, z: Complex<f64>) {
         "hankel2" => hankel2(nu, z).map(|v| {
             std::hint::black_box(v);
         }),
-        "airy" => airy_cb(z).map(|v| {
+        "airy" => airy(z).map(|v| {
             std::hint::black_box(v);
         }),
         "airyprime" => airyprime(z).map(|v| {
@@ -102,16 +132,16 @@ fn call_function(fname: &str, nu: f64, z: Complex<f64>) {
         "hankel2_scaled" => hankel2_scaled(nu, z).map(|v| {
             std::hint::black_box(v);
         }),
-        "airy_scaled" => complex_bessel::airy_scaled(z).map(|v| {
+        "airy_scaled" => airy_scaled(z).map(|v| {
             std::hint::black_box(v);
         }),
-        "airyprime_scaled" => complex_bessel::airyprime_scaled(z).map(|v| {
+        "airyprime_scaled" => airyprime_scaled(z).map(|v| {
             std::hint::black_box(v);
         }),
-        "biry_scaled" => complex_bessel::biry_scaled(z).map(|v| {
+        "biry_scaled" => biry_scaled(z).map(|v| {
             std::hint::black_box(v);
         }),
-        "biryprime_scaled" => complex_bessel::biryprime_scaled(z).map(|v| {
+        "biryprime_scaled" => biryprime_scaled(z).map(|v| {
             std::hint::black_box(v);
         }),
         _ => Ok(()),
