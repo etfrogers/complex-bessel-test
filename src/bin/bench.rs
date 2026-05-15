@@ -1,4 +1,4 @@
-use bessel_rs::{
+use amos_bessel_rs::{
     HankelKind, Scaling as BesselRsScaling, airy as airy_bessel_rs, airy_b, airy_bp, airyp,
     bessel_i, bessel_j, bessel_k, bessel_y, complex_airy, complex_airy_b, complex_bessel_i,
     complex_bessel_j, complex_bessel_k, complex_bessel_y, complex_hankel1, complex_hankel2, hankel,
