@@ -22,7 +22,7 @@ Since `complex-bessel` is a Rust translation of AMOS/TOMS 644 (Fortran), the two
 
 ## Evaluation Time
 
-Median evaluation time per function call, measured over 1000 repetitions per point. Lower is better. <!-- bench-speedup-start -->On average across all functions, the Rust implementation is **17% faster** than Fortran and **7× faster** than SciPy and **0.98× faster** than bessel-rs.<!-- bench-speedup-end -->
+Median evaluation time per function call, measured over 1000 repetitions per point. Lower is better. <!-- bench-speedup-start -->On average across all functions, the Rust implementation is **25% faster** than Fortran and **7× faster** than SciPy and **1.00× faster** than bessel-rs and **1.05× faster** than real-bessel.<!-- bench-speedup-end -->
 
 [![Performance — median time per call](images/eval_time.svg)](images/eval_time.pdf)
 
@@ -35,38 +35,38 @@ Median evaluation time per function call, measured over 1000 repetitions per poi
 <!-- summary-table-start -->
 **Unscaled Functions**
 
-| Func | Points | Ok / Warn / Err | Match (%) | Rel Err (c-b) | Rel Err (b-rs) | Time (μs, c-b) | Time (μs, b-rs) |
-|:----:|:------:|:---------------:|:---------:|:-------------:|:--------------:|:--------------:|:---------------:|
-| J | 28749 | 28747 / 0 / 2 | 100.0 | 4.2e-16 | 3.2e-16 | 0.17 | 0.14 |
-| Y | 28749 | 25512 / 0 / 3237 | 100.0 | 2.2e-15 | 8.8e-16 | 0.52 | 0.59 |
-| I | 28749 | 28747 / 0 / 2 | 100.0 | 4.2e-16 | 3.2e-16 | 0.15 | 0.14 |
-| K | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 6.8e-16 | 0.30 | 0.34 |
-| H1 | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 7.0e-16 | 0.32 | 0.35 |
-| H2 | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 7.0e-16 | 0.32 | 0.35 |
-| Ai | 28749 | 28749 / 0 / 0 | 100.0 | 6.1e-15 | 6.6e-15 | 0.32 | 0.33 |
-| Ai' | 28749 | 28749 / 0 / 0 | 100.0 | 6.3e-15 | 6.1e-15 | 0.34 | 0.33 |
-| Bi | 28749 | 28749 / 0 / 0 | 100.0 | 8.5e-15 | 7.3e-15 | 0.37 | 0.37 |
-| Bi' | 28749 | 28749 / 0 / 0 | 100.0 | 8.9e-15 | 7.2e-15 | 0.37 | 0.36 |
+| Func | Points | Ok/Wrn/Err | Match% | RelErr (c-b) | RelErr (b-rs) | RelErr (r-b) | Time (c-b) | Time (b-rs) | Time (r-b) |
+|:----:|:------:|:----------:|:------:|:------------:|:-------------:|:------------:|:----------:|:-----------:|:----------:|
+| J | 28749 | 28747 / 0 / 2 | 100.0 | 4.2e-16 | 3.2e-16 | 1.5e-16 | 0.17 | 0.14 | 0.34 |
+| Y | 28749 | 25512 / 0 / 3237 | 100.0 | 2.2e-15 | 8.8e-16 | 2.2e-16 | 0.49 | 0.56 | 0.02 |
+| I | 28749 | 28747 / 0 / 2 | 100.0 | 4.2e-16 | 3.2e-16 | N/A | 0.14 | 0.14 | N/A |
+| K | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 6.8e-16 | N/A | 0.28 | 0.33 | N/A |
+| H1 | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 7.0e-16 | N/A | 0.29 | 0.33 | N/A |
+| H2 | 28749 | 25512 / 0 / 3237 | 100.0 | 1.1e-15 | 7.0e-16 | N/A | 0.29 | 0.34 | N/A |
+| Ai | 28749 | 28749 / 0 / 0 | 100.0 | 6.1e-15 | 6.6e-15 | N/A | 0.30 | 0.31 | N/A |
+| Ai' | 28749 | 28749 / 0 / 0 | 100.0 | 6.3e-15 | 6.1e-15 | N/A | 0.31 | 0.31 | N/A |
+| Bi | 28749 | 28749 / 0 / 0 | 100.0 | 8.5e-15 | 7.3e-15 | N/A | 0.35 | 0.35 | N/A |
+| Bi' | 28749 | 28749 / 0 / 0 | 100.0 | 8.9e-15 | 7.2e-15 | N/A | 0.35 | 0.34 | N/A |
 
 **Scaled Functions**
 
-| Func | Points | Ok / Warn / Err | Match (%) | Rel Err (c-b) | Rel Err (b-rs) | Time (μs, c-b) | Time (μs, b-rs) |
-|:----:|:------:|:---------------:|:---------:|:-------------:|:--------------:|:--------------:|:---------------:|
-| J | 13125 | 13125 / 0 / 0 | 100.0 | 3.2e-16 | 3.4e-16 | 0.16 | 0.13 |
-| Y | 13125 | 12273 / 0 / 852 | 100.0 | 4.8e-16 | 8.7e-16 | 0.40 | 0.31 |
-| I | 13125 | 13125 / 0 / 0 | 100.0 | 3.4e-16 | 3.3e-16 | 0.14 | 0.12 |
-| K | 13125 | 12273 / 0 / 852 | 100.0 | 5.2e-16 | 1.1e-15 | 0.27 | 0.24 |
-| H1 | 13125 | 12273 / 0 / 852 | 100.0 | 5.5e-16 | 1.1e-15 | 0.28 | 0.25 |
-| H2 | 13125 | 12273 / 0 / 852 | 100.0 | 6.2e-16 | 1.4e-15 | 0.28 | 0.26 |
-| Ai | 13125 | 12705 / 420 / 0 | 100.0 | 2.2e-16 | 2.1e-16 | 0.28 | 0.28 |
-| Ai' | 13125 | 12705 / 420 / 0 | 100.0 | 2.0e-16 | 2.1e-16 | 0.30 | 0.29 |
-| Bi | 13125 | 12705 / 420 / 0 | 100.0 | 3.9e-14 | 3.2e-14 | 0.28 | 0.32 |
-| Bi' | 13125 | 12705 / 420 / 0 | 100.0 | 3.8e-14 | 3.6e-14 | 0.28 | 0.30 |
+| Func | Points | Ok/Wrn/Err | Match% | RelErr (c-b) | RelErr (b-rs) | RelErr (r-b) | Time (c-b) | Time (b-rs) | Time (r-b) |
+|:----:|:------:|:----------:|:------:|:------------:|:-------------:|:------------:|:----------:|:-----------:|:----------:|
+| J | 13125 | 13125 / 0 / 0 | 100.0 | 3.2e-16 | 3.4e-16 | N/A | 0.15 | 0.12 | N/A |
+| Y | 13125 | 12273 / 0 / 852 | 100.0 | 4.8e-16 | 8.7e-16 | N/A | 0.37 | 0.29 | N/A |
+| I | 13125 | 13125 / 0 / 0 | 100.0 | 3.4e-16 | 3.3e-16 | N/A | 0.13 | 0.12 | N/A |
+| K | 13125 | 12273 / 0 / 852 | 100.0 | 5.2e-16 | 1.1e-15 | N/A | 0.25 | 0.23 | N/A |
+| H1 | 13125 | 12273 / 0 / 852 | 100.0 | 5.5e-16 | 1.1e-15 | N/A | 0.26 | 0.24 | N/A |
+| H2 | 13125 | 12273 / 0 / 852 | 100.0 | 6.2e-16 | 1.4e-15 | N/A | 0.26 | 0.25 | N/A |
+| Ai | 13125 | 12705 / 420 / 0 | 100.0 | 2.2e-16 | 2.1e-16 | N/A | 0.25 | 0.26 | N/A |
+| Ai' | 13125 | 12705 / 420 / 0 | 100.0 | 2.0e-16 | 2.1e-16 | N/A | 0.26 | 0.28 | N/A |
+| Bi | 13125 | 12705 / 420 / 0 | 100.0 | 3.9e-14 | 3.2e-14 | N/A | 0.27 | 0.31 | N/A |
+| Bi' | 13125 | 12705 / 420 / 0 | 100.0 | 3.8e-14 | 3.6e-14 | N/A | 0.28 | 0.29 | N/A |
 
-> **Points**: test grid points per function.
-> **Ok / Warn / Err**: result counts by status (Warn: reduced precision, Fortran IERR=3).
-> **Match**: Rust–Fortran agreement on Ok/Warn/Err status.
-> **Rel Err**: median relative error vs mpmath (50+ digit precision).
+> **Points**: test grid points per function.  
+> **Ok / Warn / Err**: result counts by status (Warn: reduced precision, Fortran IERR=3).  
+> **Match**: Rust–Fortran agreement on Ok/Warn/Err status.  
+> **Rel Err**: median relative error vs mpmath (50+ digit precision).  
 > **Time**: median evaluation time per call.
 <!-- summary-table-end -->
 

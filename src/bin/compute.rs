@@ -82,6 +82,31 @@ fn compute_function_bessel_rs(
     }
 }
 
+fn compute_function_real_bessel(
+    fname: &str,
+    nu: f64,
+    z: Complex<f64>,
+) -> (Option<f64>, Option<f64>, String, Option<String>) {
+    if z.im != 0.0 {
+        return (None, None, "skip_non_real".into(), None);
+    }
+    let n = nu as i32;
+    if (n as f64 - nu).abs() > 1e-15 {
+        return (None, None, "skip_non_integer_order".into(), None);
+    }
+
+    let result = match fname {
+        "besselj" => Ok(real_bessel::bessel_jn(n, z.re)),
+        "bessely" => real_bessel::bessel_yn(n, z.re).map_err(|_| ()),
+        _ => return (None, None, "unknown_function".into(), None),
+    };
+
+    match result {
+        Ok(val) => (Some(val), Some(0.0), "ok".into(), Some("normal".into())),
+        Err(_) => (None, None, "error".into(), None),
+    }
+}
+
 fn compute_function(
     fname: &str,
     nu: f64,
@@ -193,6 +218,7 @@ fn process_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<R
                         match implementation {
                             "complex-bessel" => compute_function(func, 0.0, z),
                             "bessel-rs" => compute_function_bessel_rs(func, 0.0, z),
+                            "real-bessel" => compute_function_real_bessel(func, 0.0, z),
                             _ => panic!("Unknown implementation"),
                         }
                     });
@@ -217,6 +243,7 @@ fn process_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<R
                         match implementation {
                             "complex-bessel" => compute_function(func, nu, z),
                             "bessel-rs" => compute_function_bessel_rs(func, nu, z),
+                            "real-bessel" => compute_function_real_bessel(func, nu, z),
                             _ => panic!("Unknown implementation"),
                         }
                     };

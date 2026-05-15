@@ -122,7 +122,7 @@ def cmd_compute_rust():
     out = RESULTS / "rust_results.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / ".." / "target" / "release" / "compute"), "complex-bessel"],
+            [str(ROOT / "target" / "release" / "compute"), "complex-bessel"],
             stdin=fin,
             stdout=fout,
             stderr=subprocess.DEVNULL,
@@ -136,7 +136,21 @@ def cmd_compute_bessel_rs():
     out = RESULTS / "bessel_rs_results.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / ".." / "target" / "release" / "compute"), "bessel-rs"],
+            [str(ROOT / "target" / "release" / "compute"), "bessel-rs"],
+            stdin=fin,
+            stdout=fout,
+            stderr=subprocess.DEVNULL,
+        )
+
+
+def cmd_compute_real_bessel():
+    print("Computing Rust results (real-bessel)...", flush=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    grid = RESULTS / "test_grid.json"
+    out = RESULTS / "real_bessel_results.json"
+    with open(grid) as fin, open(out, "w") as fout:
+        run_cmd(
+            [str(ROOT / "target" / "release" / "compute"), "real-bessel"],
             stdin=fin,
             stdout=fout,
             stderr=subprocess.DEVNULL,
@@ -161,6 +175,7 @@ def cmd_compute_mpmath():
 def cmd_compute():
     cmd_compute_rust()
     cmd_compute_bessel_rs()
+    cmd_compute_real_bessel()
     cmd_compute_fortran()
     cmd_compute_scipy()
 
@@ -175,7 +190,7 @@ def cmd_bench_rust():
     out = RESULTS / "rust_bench.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / ".." / "target" / "release" / "bench"), "complex-bessel"],
+            [str(ROOT / "target" / "release" / "bench"), "complex-bessel"],
             stdin=fin,
             stdout=fout,
         )
@@ -188,7 +203,20 @@ def cmd_bench_bessel_rs():
     out = RESULTS / "bessel_rs_bench.json"
     with open(grid) as fin, open(out, "w") as fout:
         run_cmd(
-            [str(ROOT / ".." / "target" / "release" / "bench"), "bessel-rs"],
+            [str(ROOT / "target" / "release" / "bench"), "bessel-rs"],
+            stdin=fin,
+            stdout=fout,
+        )
+
+
+def cmd_bench_real_bessel():
+    print("Benchmarking Rust (real-bessel)...", flush=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    grid = RESULTS / "test_grid.json"
+    out = RESULTS / "real_bessel_bench.json"
+    with open(grid) as fin, open(out, "w") as fout:
+        run_cmd(
+            [str(ROOT / "target" / "release" / "bench"), "real-bessel"],
             stdin=fin,
             stdout=fout,
         )
@@ -207,6 +235,7 @@ def cmd_bench_scipy():
 def cmd_bench():
     cmd_bench_rust()
     cmd_bench_bessel_rs()
+    cmd_bench_real_bessel()
     cmd_bench_fortran()
     cmd_bench_scipy()
 
@@ -280,12 +309,14 @@ COMMANDS = {
     "compute": cmd_compute,
     "compute-rust": cmd_compute_rust,
     "compute-bessel-rs": cmd_compute_bessel_rs,
+    "compute-real-bessel": cmd_compute_real_bessel,
     "compute-fortran": cmd_compute_fortran,
     "compute-scipy": cmd_compute_scipy,
     "compute-mpmath": cmd_compute_mpmath,
     "bench": cmd_bench,
     "bench-rust": cmd_bench_rust,
     "bench-bessel-rs": cmd_bench_bessel_rs,
+    "bench-real-bessel": cmd_bench_real_bessel,
     "bench-fortran": cmd_bench_fortran,
     "bench-scipy": cmd_bench_scipy,
     "compare": cmd_compare,

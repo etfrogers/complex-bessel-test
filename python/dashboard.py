@@ -17,10 +17,9 @@ import subprocess as _subprocess
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
-
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "images")
@@ -29,8 +28,9 @@ IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "images")
 def _get_versions():
     """Collect library versions for legend labels."""
     import subprocess
-    import scipy
+
     import mpmath
+    import scipy
 
     # complex-bessel version via cargo metadata
     try:
@@ -42,9 +42,13 @@ def _get_versions():
         packages = json.loads(meta)["packages"]
         rust_ver = next(p["version"] for p in packages if p["name"] == "complex-bessel")
         bessel_rs_ver = next(p["version"] for p in packages if p["name"] == "bessel-rs")
+        real_bessel_ver = next(
+            (p["version"] for p in packages if p["name"] == "real-bessel"), None
+        )
     except (FileNotFoundError, subprocess.CalledProcessError, StopIteration, KeyError):
         rust_ver = None
         bessel_rs_ver = None
+        real_bessel_ver = None
 
     # gfortran version (e.g. "14.2.0" from "GNU Fortran ... 14.2.0")
     try:
@@ -56,6 +60,7 @@ def _get_versions():
     return {
         "rust": rust_ver,
         "bessel_rs": bessel_rs_ver,
+        "real_bessel": real_bessel_ver,
         "gfortran": gfortran_ver,
         "scipy": scipy.__version__,
         "mpmath": mpmath.__version__,
@@ -72,6 +77,7 @@ def _legend_labels(versions):
     return [
         fmt("complex-bessel", versions.get("rust")) + " (Rust)",
         fmt("bessel-rs", versions.get("bessel_rs")) + " (Rust)",
+        fmt("real-bessel", versions.get("real_bessel")) + " (Rust)",
         "AMOS/TOMS 644" + (f" (gfortran {gf})" if gf else " (Fortran)"),
         fmt("SciPy", versions.get("scipy")) + " (Python)",
     ]
@@ -311,6 +317,7 @@ def plot_accuracy_violin(labels):
 
     rust_data = [safe_log10(dist[f].get("rust", [])) for f in funcs]
     bessel_rs_data = [safe_log10(dist[f].get("bessel_rs", [])) for f in funcs]
+    real_bessel_data = [safe_log10(dist[f].get("real_bessel", [])) for f in funcs]
     fortran_data = [safe_log10(dist[f].get("fortran", [])) for f in funcs]
     scipy_data = [safe_log10(dist[f].get("scipy", [])) for f in funcs]
 
@@ -318,8 +325,8 @@ def plot_accuracy_violin(labels):
         ax0,
         positions,
         x_labels,
-        [rust_data, bessel_rs_data, fortran_data, scipy_data],
-        ["#2196F3", "#F44336", "#FF9800", "#4CAF50"],
+        [rust_data, bessel_rs_data, real_bessel_data, fortran_data, scipy_data],
+        ["#2196F3", "#F44336", "#00BCD4", "#FF9800", "#4CAF50"],
         labels,
         "Accuracy — Unscaled Functions",
         threshold=OUTLIER_THRESHOLD_UNSCALED,
@@ -334,6 +341,7 @@ def plot_accuracy_violin(labels):
 
     s_rust = [safe_log10(dist[f].get("rust", [])) for f in s_funcs]
     s_bessel_rs = [safe_log10(dist[f].get("bessel_rs", [])) for f in s_funcs]
+    s_real_bessel = [safe_log10(dist[f].get("real_bessel", [])) for f in s_funcs]
     s_fortran = [safe_log10(dist[f].get("fortran", [])) for f in s_funcs]
     s_scipy = [safe_log10(dist[f].get("scipy", [])) for f in s_funcs]
 
@@ -341,8 +349,8 @@ def plot_accuracy_violin(labels):
         ax1,
         s_positions,
         s_labels,
-        [s_rust, s_bessel_rs, s_fortran, s_scipy],
-        ["#2196F3", "#F44336", "#FF9800", "#4CAF50"],
+        [s_rust, s_bessel_rs, s_real_bessel, s_fortran, s_scipy],
+        ["#2196F3", "#F44336", "#00BCD4", "#FF9800", "#4CAF50"],
         labels,
         "Accuracy — Scaled Functions",
         threshold=OUTLIER_THRESHOLD_SCALED,
@@ -486,6 +494,7 @@ def plot_performance_violin(labels):
 
     bench_rust = load_json("rust_bench.json")
     bench_bessel_rs = load_json("bessel_rs_bench.json")
+    bench_real_bessel = load_json("real_bessel_bench.json")
     bench_fortran = load_json("fortran_bench.json")
     bench_scipy = load_json("scipy_bench.json")
 
@@ -527,13 +536,18 @@ def plot_performance_violin(labels):
 
     rust_groups = group_by_base(bench_rust)
     bessel_rs_groups = group_by_base(bench_bessel_rs)
+    real_bessel_groups = group_by_base(bench_real_bessel)
     fortran_groups = group_by_base(bench_fortran)
     scipy_groups = group_by_base(bench_scipy)
 
     funcs = [
         f
         for f in BASE_ORDER
-        if f in rust_groups or f in bessel_rs_groups or f in fortran_groups or f in scipy_groups
+        if f in rust_groups
+        or f in bessel_rs_groups
+        or f in real_bessel_groups
+        or f in fortran_groups
+        or f in scipy_groups
     ]
     x_labels = funcs
     positions = list(range(len(funcs)))
@@ -542,7 +556,12 @@ def plot_performance_violin(labels):
         np.log10(np.array(rust_groups.get(f, [0.1])) + 0.001).tolist() for f in funcs
     ]
     bessel_rs_data = [
-        np.log10(np.array(bessel_rs_groups.get(f, [0.1])) + 0.001).tolist() for f in funcs
+        np.log10(np.array(bessel_rs_groups.get(f, [0.1])) + 0.001).tolist()
+        for f in funcs
+    ]
+    real_bessel_data = [
+        np.log10(np.array(real_bessel_groups.get(f, [0.1])) + 0.001).tolist()
+        for f in funcs
     ]
     fortran_data = [
         np.log10(np.array(fortran_groups.get(f, [0.1])) + 0.001).tolist() for f in funcs
@@ -556,8 +575,8 @@ def plot_performance_violin(labels):
     make_violin(
         ax,
         positions,
-        [rust_data, bessel_rs_data, fortran_data, scipy_data],
-        ["#2196F3", "#F44336", "#FF9800", "#4CAF50"],
+        [rust_data, bessel_rs_data, real_bessel_data, fortran_data, scipy_data],
+        ["#2196F3", "#F44336", "#00BCD4", "#FF9800", "#4CAF50"],
         labels,
         "Evaluation Time (lower is better)",
         "Time per call",
@@ -612,6 +631,7 @@ def plot_summary_table(versions):
 
     bench_rust = load_json("rust_bench.json")
     bench_bessel_rs = load_json("bessel_rs_bench.json")
+    bench_real_bessel = load_json("real_bessel_bench.json")
 
     # Group bench by function
     bench_groups = {}
@@ -627,6 +647,13 @@ def plot_summary_table(versions):
         if func not in bench_groups_bessel_rs:
             bench_groups_bessel_rs[func] = []
         bench_groups_bessel_rs[func].append(r["time_ns"] / 1000.0)
+
+    bench_groups_real_bessel = {}
+    for r in bench_real_bessel:
+        func = r["function"]
+        if func not in bench_groups_real_bessel:
+            bench_groups_real_bessel[func] = []
+        bench_groups_real_bessel[func].append(r["time_ns"] / 1000.0)
 
     def build_rows(func_list):
         rows = []
@@ -654,21 +681,38 @@ def plot_summary_table(versions):
 
             acc_bessel_rs = acc.get(func, {}).get("bessel_rs", {})
             med_err_bessel_rs = acc_bessel_rs.get("median_err")
-            med_err_bessel_rs_str = f"{med_err_bessel_rs:.1e}" if med_err_bessel_rs is not None else "N/A"
+            med_err_bessel_rs_str = (
+                f"{med_err_bessel_rs:.1e}" if med_err_bessel_rs is not None else "N/A"
+            )
+
+            acc_real_bessel = acc.get(func, {}).get("real_bessel", {})
+            med_err_real_bessel = acc_real_bessel.get("median_err")
+            med_err_real_bessel_str = (
+                f"{med_err_real_bessel:.1e}"
+                if med_err_real_bessel is not None
+                else "N/A"
+            )
 
             times = bench_groups.get(func, [])
             median_time = f"{np.median(times):.2f}" if times else "N/A"
 
             times_bessel_rs = bench_groups_bessel_rs.get(func, [])
-            median_time_bessel_rs = f"{np.median(times_bessel_rs):.2f}" if times_bessel_rs else "N/A"
+            median_time_bessel_rs = (
+                f"{np.median(times_bessel_rs):.2f}" if times_bessel_rs else "N/A"
+            )
+
+            times_real_bessel = bench_groups_real_bessel.get(func, [])
+            median_time_real_bessel = (
+                f"{np.median(times_real_bessel):.2f}" if times_real_bessel else "N/A"
+            )
 
             rows.append(
-                f"| {dname} | {total} | {owe} | {match_pct} | {med_err_str} | {med_err_bessel_rs_str} | {median_time} | {median_time_bessel_rs} |"
+                f"| {dname} | {total} | {owe} | {match_pct} | {med_err_str} | {med_err_bessel_rs_str} | {med_err_real_bessel_str} | {median_time} | {median_time_bessel_rs} | {median_time_real_bessel} |"
             )
         return rows
 
-    header = "| Func | Points | Ok / Warn / Err | Match (%) | Rel Err (c-b) | Rel Err (b-rs) | Time (μs, c-b) | Time (μs, b-rs) |"
-    sep = "|:----:|:------:|:---------------:|:---------:|:-------------:|:--------------:|:--------------:|:---------------:|"
+    header = "| Func | Points | Ok/Wrn/Err | Match% | RelErr (c-b) | RelErr (b-rs) | RelErr (r-b) | Time (c-b) | Time (b-rs) | Time (r-b) |"
+    sep = "|:----:|:------:|:----------:|:------:|:------------:|:-------------:|:------------:|:----------:|:-----------:|:----------:|"
 
     lines = []
     lines.append("**Unscaled Functions**")
@@ -690,7 +734,6 @@ def plot_summary_table(versions):
         "> **Rel Err**: median relative error vs mpmath (50+ digit precision).  \n"
         "> **Time**: median evaluation time per call."
     )
-
 
     md_table = "\n".join(lines)
 
@@ -749,6 +792,7 @@ def _update_bench_speedup(readme_path):
     """Compute average speedup of Rust vs Fortran/SciPy and update README."""
     bench_rust = load_json("rust_bench.json")
     bench_bessel_rs = load_json("bessel_rs_bench.json")
+    bench_real_bessel = load_json("real_bessel_bench.json")
     bench_fortran = load_json("fortran_bench.json")
     bench_scipy = load_json("scipy_bench.json")
 
@@ -760,12 +804,14 @@ def _update_bench_speedup(readme_path):
 
     rust_med = median_by_func(bench_rust)
     bessel_rs_med = median_by_func(bench_bessel_rs)
+    real_bessel_med = median_by_func(bench_real_bessel)
     fortran_med = median_by_func(bench_fortran)
     scipy_med = median_by_func(bench_scipy)
 
     ratios_fortran = []
     ratios_scipy = []
     ratios_bessel_rs = []
+    ratios_real_bessel = []
     for func in ALL_FUNCS:
         if func in rust_med and func in fortran_med:
             ratios_fortran.append(fortran_med[func] / rust_med[func])
@@ -773,6 +819,8 @@ def _update_bench_speedup(readme_path):
             ratios_scipy.append(scipy_med[func] / rust_med[func])
         if func in rust_med and func in bessel_rs_med:
             ratios_bessel_rs.append(bessel_rs_med[func] / rust_med[func])
+        if func in rust_med and func in real_bessel_med:
+            ratios_real_bessel.append(real_bessel_med[func] / rust_med[func])
 
     parts = []
     if ratios_fortran:
@@ -785,6 +833,9 @@ def _update_bench_speedup(readme_path):
     if ratios_bessel_rs:
         avg_brs = np.mean(ratios_bessel_rs)
         parts.append(f"**{avg_brs:.2f}× faster** than bessel-rs")
+    if ratios_real_bessel:
+        avg_rb = np.mean(ratios_real_bessel)
+        parts.append(f"**{avg_rb:.2f}× faster** than real-bessel")
 
     if not parts:
         return

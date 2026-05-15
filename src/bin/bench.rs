@@ -82,6 +82,26 @@ fn call_function_bessel_rs(fname: &str, nu: f64, z: Complex<f64>) {
     };
 }
 
+fn call_function_real_bessel(fname: &str, nu: f64, z: Complex<f64>) {
+    if z.im != 0.0 {
+        return;
+    }
+    let n = nu as i32;
+    if (n as f64 - nu).abs() > 1e-15 {
+        return;
+    }
+
+    match fname {
+        "besselj" => {
+            std::hint::black_box(real_bessel::bessel_jn(n, z.re));
+        }
+        "bessely" => {
+            let _ = std::hint::black_box(real_bessel::bessel_yn(n, z.re));
+        }
+        _ => {}
+    }
+}
+
 fn call_function(fname: &str, nu: f64, z: Complex<f64>) {
     let _ = match fname {
         "besselj" => besselj(nu, z).map(|v| {
@@ -158,6 +178,7 @@ fn bench_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<Ben
             match implementation {
                 "complex-bessel" => call_function(func, 0.5, warmup_z),
                 "bessel-rs" => call_function_bessel_rs(func, 0.5, warmup_z),
+                "real-bessel" => call_function_real_bessel(func, 0.5, warmup_z),
                 _ => panic!("Unknown implementation"),
             }
         }
@@ -169,10 +190,25 @@ fn bench_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<Ben
                 for &im in &spec.im_values {
                     let z = Complex::new(re, im);
 
+                    // Skip points that real-bessel cannot handle to avoid skewed bench results
+                    if implementation == "real-bessel" {
+                        if z.im != 0.0 {
+                            continue;
+                        }
+                        let n = nu as i32;
+                        if (n as f64 - nu).abs() > 1e-15 {
+                            continue;
+                        }
+                        if func != "besselj" && func != "bessely" {
+                            continue;
+                        }
+                    }
+
                     // Warmup this specific point
                     match implementation {
                         "complex-bessel" => call_function(func, nu, z),
                         "bessel-rs" => call_function_bessel_rs(func, nu, z),
+                        "real-bessel" => call_function_real_bessel(func, nu, z),
                         _ => panic!("Unknown implementation"),
                     }
 
@@ -182,6 +218,7 @@ fn bench_grid(grid_name: &str, spec: &GridSpec, implementation: &str) -> Vec<Ben
                         match implementation {
                             "complex-bessel" => call_function(func, nu, z),
                             "bessel-rs" => call_function_bessel_rs(func, nu, z),
+                            "real-bessel" => call_function_real_bessel(func, nu, z),
                             _ => panic!("Unknown implementation"),
                         }
                     }
